@@ -1,0 +1,21 @@
+// https://github.com/inkle/ink/blob/master/Documentation/WritingWithInk.md
+
+?start: text
+    | TODO              -> todo
+
+text: (STRING tag?)+
+
+STRING: /[^#\n]+/
+TODO: "TODO:" STRING
+?tag: SH_COMMENT
+
+
+%import common.NEWLINE
+%import common.CPP_COMMENT
+%import common.C_COMMENT
+%import common.SH_COMMENT
+
+%ignore NEWLINE
+%ignore CPP_COMMENT
+%ignore C_COMMENT
+%ignore TODO
