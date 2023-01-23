@@ -4,19 +4,37 @@ start: (NEWLINE | stmt)+
 
 ?stmt: text
       | options
+      | knot
+      | divert
       | TODO              -> todo
 
 text: (STRING tag? NEWLINE*)+
-opttext: OPTSTRING? ("[" OPTSUPPRESS? "]" OPTPOST?)? tag?
+opttext: OPTSTRING? ("[" OPTSUPPRESS? "]" OPTPOST?)? divert? tag?
 
 options: option+
-option: "*" opttext NEWLINE text?
+option: WS_INLINE* "*" opttext NEWLINE (text | ndivert NEWLINE?)*
 
-OPTSTRING: /[^#\n\[\]]+/
+knotheader: "===" /[^\n=]+/ "==="?
+knot: knotheader NEWLINE (NEWLINE | text | options | ndivert)
+ndivert: WS_INLINE* divert
+divert: "->" /[^\n]+/
+
+OPTSTRING: /[^#\n\[\]\-]+/
 OPTSUPPRESS: OPTSTRING
 OPTPOST: OPTSTRING
 
-STRING: /[^#\n\*]+/
+// text doesn't starts with:
+// #: comment
+// *: option
+// =: knot
+// //: comment
+// /*: comment
+// ->: divert
+TEXTSTART: /[^#\n\*=\-\/ \t]/
+         | "-" /[^>]/
+         | "/" /[^\/\*]/
+
+STRING: WS_INLINE* TEXTSTART /[^#\n]*/
 TODO: "TODO:" STRING
 ?tag: SH_COMMENT
 
@@ -25,6 +43,8 @@ TODO: "TODO:" STRING
 %import common.CPP_COMMENT
 %import common.C_COMMENT
 %import common.SH_COMMENT
+%import common.WS_INLINE
+%import common.CNAME
 
 %ignore CPP_COMMENT
 %ignore C_COMMENT

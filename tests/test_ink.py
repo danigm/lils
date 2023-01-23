@@ -38,7 +38,6 @@ def test_option():
     script.choose(0)
     assert script.output[0] == "Hello back!"
     assert script.output[1] == "Nice to hear from you!"
-    assert script.next() is None
 
 
 def test_option_suppress():
@@ -50,7 +49,6 @@ def test_option_suppress():
 
     script.choose(0)
     assert script.output[0] == "Nice to hear from you!"
-    assert script.next() is None
 
 def test_option_suppress_complex():
     script = ink("option-03")
@@ -73,7 +71,6 @@ def test_option_suppress_complex():
     script.choose(0)
     assert script.output[0] == "\"I am somewhat tired,\" I repeated."
     assert script.output[1] == "\"Really,\" he responded. \"How deleterious.\""
-    assert script.next() is None
 
     # Choose option 2
     script.run()
@@ -83,9 +80,39 @@ def test_option_suppress_complex():
     script.choose(1)
     assert script.output[0] == "\"Nothing, Monsieur!\" I replied."
     assert script.output[1] == "\"Very good, then.\""
-    assert script.next() is None
 
     # test that tags work in options
     assert opt1.tag == "option2"
     assert opt1.content[0].tag == "tag in text"
     assert script.output[1].tag == "tag in text"
+
+
+def test_knots():
+    script = ink("knot-01")
+    script.run()
+
+    assert script.output[0] == "The story starts here"
+    assert script.output[1] == "We arrived into London at 9.45pm exactly."
+    assert script.finished
+
+def test_knots_options():
+    script = ink("knot-02")
+    script.run()
+
+    assert script.output[0] == "Where do you want to go?"
+    assert len(script.options) == 3
+
+    script.choose(0)
+    assert script.output[0] == "Paris"
+    assert script.output[1] == "We arrived into Paris."
+    assert script.output[2] == "Where do you want to go?"
+
+    script.choose(1)
+    assert script.output[0] == "We arrived into London."
+    assert script.finished
+
+    script.run()
+    script.choose(2)
+    assert script.output[0] == "Madrid"
+    assert script.output[1] == "Noone wants to go there!"
+    assert script.finished
