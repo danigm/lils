@@ -8,21 +8,8 @@ start: (NEWLINE | stmt)+
       | divert
       | TODO              -> todo
 
-text: (STRING tag? NEWLINE*)+
-opttext: OPTSTRING? ("[" OPTSUPPRESS? "]" OPTPOST?)? divert? tag?
-
-options: option+
-option: WS_INLINE* "*" opttext NEWLINE (text | ndivert NEWLINE?)*
-
-knotheader: "===" /[^\n=]+/ "==="?
-knot: knotheader NEWLINE (NEWLINE | text | options | ndivert)
-ndivert: WS_INLINE* divert
-divert: "->" /[^\n]+/
-
-OPTSTRING: /[^#\n\[\]\-]+/
-OPTSUPPRESS: OPTSTRING
-OPTPOST: OPTSTRING
-
+// Multiple line of plain text with tags
+text: (GLUESTART? STRING GLUEEND? divert? tag? NEWLINE*)+
 // text doesn't starts with:
 // #: comment
 // *: option
@@ -30,14 +17,51 @@ OPTPOST: OPTSTRING
 // //: comment
 // /*: comment
 // ->: divert
-TEXTSTART: /[^#\n\*=\-\/ \t]/
+// <>: glue
+TEXTSTART: /[^#\n\*=\-\/ \t<]/
          | "-" /[^>]/
          | "/" /[^\/\*]/
+         | "<" /[^>]/
+TEXTBODY: /
+    ([^#\n\-<]
+     |-[^>][^#\n\-]* # - but not divert
+     |<[^>][^#\n\<]* # < but not glue
+    )*
+/x
 
-STRING: WS_INLINE* TEXTSTART /[^#\n]*/
+STRING: WS_INLINE* TEXTSTART TEXTBODY
+GLUE: "<>"
+GLUESTART: GLUE
+GLUEEND: GLUE
+
+// Option parsing
+// * opt1
+//   opt1 content text
+//   -> divert in opt1
+// * opt2 [suppress] with text -> divert # with tag support
+options: option+
+opttext: OPTSTRING? ("[" OPTSUPPRESS? "]" OPTPOST?)? divert? tag?
+option: WS_INLINE* "*" opttext NEWLINE (text | ndivert NEWLINE?)*
+OPTSTRING: /[^#\n\[\]\-]+/
+OPTSUPPRESS: OPTSTRING
+OPTPOST: OPTSTRING
+
+// Knot
+// === knot_name ===
+// knot content that can be
+// * text
+// * options
+// * divert
+knotheader: "===" /[^\n=]+/ "==="?
+knot: knotheader NEWLINE (NEWLINE | text | options | ndivert)
+
+// Divert
+// -> knot_name
+ndivert: WS_INLINE* divert
+divert: "->" /[^\n]+/
+
 TODO: "TODO:" STRING
 ?tag: SH_COMMENT
-
 
 %import common.NEWLINE
 %import common.CPP_COMMENT

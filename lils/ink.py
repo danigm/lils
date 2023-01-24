@@ -2,6 +2,7 @@ import os
 import re
 
 from lark import Lark
+from lark import Token
 from lark import Transformer
 from lark.visitors import Discard
 
@@ -12,6 +13,8 @@ from dataclasses import dataclass
 class Text:
     text: str
     tag: str
+    glue_start: bool = False
+    glue_end: bool = False
 
     def __str__(self):
         return self.text
@@ -57,6 +60,7 @@ class Knot:
 @dataclass
 class Divert:
     to: str
+    inline: bool = False
 
     def __str__(self):
         return f"-> {self.to}"
@@ -65,11 +69,27 @@ class Divert:
 class InkTransformer(Transformer):
     def text(self, s):
         lines = []
+        glue_start = False
         for i in s:
-            if i.type == "SH_COMMENT":
-                lines[-1].tag = i.value[1:].strip()
-            else:
-                lines.append(Text(text=i.value.strip(), tag=""))
+            match i:
+                case(Token(type="GLUESTART")):
+                    glue_start = True
+                case(Token(type="GLUEEND")):
+                    lines[-1].glue_end = True
+                case(Token(type="SH_COMMENT")):
+                    lines[-1].tag = i.value[1:].strip()
+                case(Divert()):
+                    i.inline = True
+                    lines.append(i)
+                case(Token(type="STRING")):
+                    text = i.value.strip()
+                    if lines and lines[-1].glue_end:
+                        lines[-1].text += f" {text}"
+                        lines[-1].glue_end = False
+                        continue
+
+                    lines.append(Text(text=text, tag="", glue_start=glue_start))
+                    glue_start = False
         return lines
 
     def opttext(self, s):
@@ -157,6 +177,7 @@ class InkScript:
         self._transformer = InkTransformer()
         self._script = None
         self.finished = False
+        self.glue = False
 
         # All script knots will go here, the default one has no name
         self._knots = {
@@ -218,6 +239,20 @@ class InkScript:
         self._current_knot = self._knots[""]
         return self._go_next()
 
+    def _add_output(self, texts):
+
+        # check glue
+        if self._output:
+            last = self._output[-1]
+            head, *texts = texts
+            if self.glue or last.glue_end or head.glue_start:
+                last.text += f" {head}"
+                self.glue = False
+            else:
+                texts = [head, *texts]
+
+        self._output += texts
+
     def _go_to_divert(self, divert):
         # TODO: store the prev knot somewhere to be able to go back?
         self._step = 0
@@ -240,14 +275,16 @@ class InkScript:
         step = self._current_knot[self._step]
         match step:
             case Divert():
+                if step.inline:
+                    self.glue = True
                 return self._go_to_divert(step)
             case [Option(), *others]:
                 self._options = step
                 return self.output
             case [Text(), *others]:
-                self._output += step
+                self._add_output(step)
             case Text():
-                self._output += [step]
+                self._add_output([step])
 
         self._step += 1
         return self._go_next()

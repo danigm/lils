@@ -116,3 +116,32 @@ def test_knots_options():
     assert script.output[0] == "Madrid"
     assert script.output[1] == "Noone wants to go there!"
     assert script.finished
+
+
+def test_divert_and_glue():
+    script = ink("divert-01")
+
+    # normal divert
+    script.run()
+    script.choose(0)
+    assert script.output == ["We hurried home to Savile Row", "as fast as we could."]
+
+    # direct divert, no new line
+    script.run()
+    script.choose(1)
+    assert script.output == ["We hurried home to - Savile Row as fast as we could."]
+
+    # glue divert, no new line
+    script.run()
+    script.choose(2)
+    assert script.output == ["We hurried home to Savile Row as fast as we could."]
+
+    # glue divert 2, no new line
+    script.run()
+    script.choose(3)
+    assert script.output == ["We hurried home to Savile Row as fast as we could."]
+
+    # middle glue
+    script.run()
+    script.choose(4)
+    assert script.output == ["We hurried home to Savile Row", "as fast as we could."]
