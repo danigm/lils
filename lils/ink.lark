@@ -3,10 +3,10 @@
 start: (NEWLINE | stmt)+
 
 ?stmt: text
-      | options
-      | knot
-      | divert
-      | TODO              -> todo
+     | options
+     | knot
+     | divert
+     | TODO              -> todo
 
 // Multiple line of plain text with tags
 text: (GLUESTART? STRING GLUEEND? divert? tag? NEWLINE*)+
@@ -18,10 +18,10 @@ text: (GLUESTART? STRING GLUEEND? divert? tag? NEWLINE*)+
 // /*: comment
 // ->: divert
 // <>: glue
-TEXTSTART: /[^#\n\*=\-\/ \t<]/
-         | "-" /[^>]/
-         | "/" /[^\/\*]/
-         | "<" /[^>]/
+TEXTSTART.1: /[^#\n\*=\-\/ \t<]/
+           | "-" /[^>]/
+           | "/" /[^\/\*]/
+           | "<" /[^>]/
 TEXTBODY: /
     ([^#\n\-<]
      |-[^>][^#\n\-]* # - but not divert
@@ -42,7 +42,7 @@ GLUEEND: GLUE
 options: option+
 opttext: OPTSTRING? ("[" OPTSUPPRESS? "]" OPTPOST?)? divert? tag?
 option: WS_INLINE* "*" opttext NEWLINE (text | ndivert NEWLINE?)*
-OPTSTRING: /[^#\n\[\]\-]+/
+OPTSTRING: /[^#\n\[\]\-=]+/
 OPTSUPPRESS: OPTSTRING
 OPTPOST: OPTSTRING
 
@@ -52,16 +52,34 @@ OPTPOST: OPTSTRING
 // * text
 // * options
 // * divert
-knotheader: "===" /[^\n=]+/ "==="?
-knot: knotheader NEWLINE (NEWLINE | text | options | ndivert)
+knotheader: KNOT WS_INLINE* CNAME WS_INLINE* "==="?
+knot: knotheader NEWLINE content? stitch*
+
+// Stitches
+// = stitch_name
+// stitch content can be
+stitchheader: STITCH WS_INLINE* CNAME
+stitch: stitchheader NEWLINE content
+
+content: (text | options | ndivert | NEWLINE)+
 
 // Divert
 // -> knot_name
+// -> knot_name.stitch
 ndivert: WS_INLINE* divert
-divert: "->" /[^\n]+/
+divert: "->" WS_INLINE* divert_name
+divert_name: CNAME divert_stitch?
+divert_stitch: DOT CNAME
+// Give priority to avoid string matching instead of divert in options
+DOT.2: "."
 
 TODO: "TODO:" STRING
 ?tag: SH_COMMENT
+
+// The priority in this rules is important, KNOT has higher priority thant
+// STITCH
+KNOT.3: WS_INLINE* "===" 
+STITCH.2: WS_INLINE* "="
 
 %import common.NEWLINE
 %import common.CPP_COMMENT

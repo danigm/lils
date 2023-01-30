@@ -7,12 +7,13 @@ from lark import Transformer
 from lark.visitors import Discard
 
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
 class Text:
     text: str
-    tag: str
+    tag: Optional[str] = None
     glue_start: bool = False
     glue_end: bool = False
 
@@ -25,6 +26,36 @@ class Text:
 
         return str(self) == str(other)
 
+
+@dataclass
+class Divert:
+    to: str
+    stitch: Optional[str] = None
+    inline: bool = False
+
+    def __str__(self):
+        to = f"-> {self.to}"
+        if self.stitch:
+            to = f"{to}.{self.stitch}"
+        return to
+
+
+@dataclass
+class Texts:
+    content: [Text]
+    divert: Optional[Divert]
+
+    def __str__(self):
+        return "\n".join(str(i) for i in self.content)
+
+    def __iter__(self):
+        return iter(self.content)
+
+    def __eq__(self, other):
+        if isinstance(other, list):
+            return self.content == other
+        return self.content == other.content and self.divert == content.divert
+ 
 
 @dataclass
 class Option:
@@ -43,9 +74,25 @@ class Option:
 
 
 @dataclass
+class Stitch:
+    name: str
+    content: list
+
+    def __str__(self):
+        return f"= {self.name}"
+
+    def __getitem__(self, i):
+        return self.content[i]
+
+    def __len__(self):
+        return len(self.content)
+
+
+@dataclass
 class Knot:
     name: str
     content: list
+    stitches: dict[str, Stitch]
 
     def __str__(self):
         return f"=== {self.name} ==="
@@ -56,19 +103,15 @@ class Knot:
     def __len__(self):
         return len(self.content)
 
-
-@dataclass
-class Divert:
-    to: str
-    inline: bool = False
-
-    def __str__(self):
-        return f"-> {self.to}"
+    @classmethod
+    def empty(cls, name=""):
+        return cls(name=name, content=[], stitches={})
 
 
 class InkTransformer(Transformer):
     def text(self, s):
         lines = []
+        texts = Texts(content=lines, divert=None)
         glue_start = False
         for i in s:
             match i:
@@ -80,7 +123,7 @@ class InkTransformer(Transformer):
                     lines[-1].tag = i.value[1:].strip()
                 case(Divert()):
                     i.inline = True
-                    lines.append(i)
+                    texts.divert = i
                 case(Token(type="STRING")):
                     text = i.value.strip()
                     if lines and lines[-1].glue_end:
@@ -90,7 +133,7 @@ class InkTransformer(Transformer):
 
                     lines.append(Text(text=text, tag="", glue_start=glue_start))
                     glue_start = False
-        return lines
+        return texts
 
     def opttext(self, s):
         display_text = ""
@@ -123,18 +166,7 @@ class InkTransformer(Transformer):
         opttext, *content = s
         (fulltext, option, display_text, tag, divert) = opttext
         text = Text(text=fulltext, tag=tag)
-        # content can be:
-        # * text
-        # * divert
-        # * text, divert
-        match content:
-            case [[Text()]]:
-                content = content[0]
-            case [Divert()]:
-                content = [content[0]]
-            case [[Text()], Divert()]:
-                content = content[0] + [content[1]]
-
+        # If there's a divert in the option, the followed content is ignored
         if divert:
             content = [divert]
         return Option(content=content, text=text, display_text=display_text, option=option)
@@ -146,16 +178,43 @@ class InkTransformer(Transformer):
         return s
 
     def knotheader(self, s):
-        (s, ) = s
-        return s.value.strip()
+        knot, name = s
+        return name.value.strip()
+
+    def content(self, s):
+        return s
 
     def knot(self, s):
+        header, content, *rest = s
+        stitches = {}
+        if isinstance(content, Stitch):
+            default_stitch = content
+            content = default_stitch.content
+            stitches[default_stitch.name] = default_stitch
+        if rest:
+            stitches.update({i.name: i for i in rest})
+        return Knot(content=content, name=header, stitches=stitches)
+
+    def stitchheader(self, s):
+        stitch, name = s
+        return name.value.strip()
+
+    def stitch(self, s):
         header, content = s
-        return Knot(content=content, name=header)
+        return Stitch(name=header, content=content)
 
     def divert(self, s):
-        (knot, ) = s
-        return Divert(to=knot.value.strip())
+        ((knot, stitch), ) = s
+        return Divert(to=knot, stitch=stitch)
+
+    def divert_stitch(self, s):
+        _dot, stich_name = s
+        return stich_name.value.strip()
+
+    def divert_name(self, s):
+        knot, *stitch = s
+        stitch = stitch[0] if stitch else None
+        return (knot.value.strip(), stitch)
 
     def ndivert(self, s):
         return s[0]
@@ -181,8 +240,8 @@ class InkScript:
 
         # All script knots will go here, the default one has no name
         self._knots = {
-            "": Knot(name="", content=[]),
-            "END": Knot(name="END", content=[]),
+            "": Knot.empty(name=""),
+            "END": Knot.empty(name="END"),
         }
 
         with open(self._ink_path) as f:
@@ -190,6 +249,7 @@ class InkScript:
             self._script = self._transformer.transform(self._tree)
             self._parse_knots(self._script)
             self._current_knot = self._knots[""]
+            self._current_stitch = None
 
     def _init_parser(self):
         grammar = os.path.join(os.path.dirname(__file__), "ink.lark")
@@ -222,21 +282,29 @@ class InkScript:
         # TODO: Remove option for next runs
         # https://github.com/inkle/ink/blob/master/Documentation/WritingWithInk.md#choices-can-only-be-used-once
         opt = self.options[option]
-        text = [i for i in opt.content if not isinstance(i, Divert)]
-        if opt.display_text:
-            self._output = [Text(text=opt.display_text, tag=opt.text.tag), *text]
-        else:
-            self._output = text
+        content = opt.content
 
-        if opt.content and isinstance(opt.content[-1], Divert):
-            self._go_to_divert(opt.content[-1])
-        else:
-            self._go_next()
+        self._output = []
+        if opt.display_text:
+            self._output += [Text(text=opt.display_text, tag=opt.text.tag)]
+
+        # [Texts, Divert] | [Texts] | [Divert]
+        match content:
+            case [Texts(content=content), divert]:
+                self._output += content
+                self._go_to_divert(divert)
+            case [Texts(content=content)]:
+                self._output += content
+                self._go_next()
+            case [divert]:
+                self._go_to_divert(divert)
 
     def run(self):
         self._step = 0
         self._output = []
         self._current_knot = self._knots[""]
+        self._current_stitch = None
+        self.glue = False
         return self._go_next()
 
     def _add_output(self, texts):
@@ -256,7 +324,13 @@ class InkScript:
     def _go_to_divert(self, divert):
         # TODO: store the prev knot somewhere to be able to go back?
         self._step = 0
-        self._current_knot = self._knots[divert.to]
+        self._current_stitch = None
+        if divert.to in self._knots:
+            self._current_knot = self._knots[divert.to]
+            self._current_stitch = divert.stitch
+        else:
+            # maybe a local divert to a stitch
+            self._current_stitch = divert.to
         return self._go_next()
 
     def _go_next(self):
@@ -267,12 +341,20 @@ class InkScript:
 
         self._options = []
 
-        # No more steps in this knot, so it's completed
-        if self._step >= len(self._current_knot):
-            self.finished = True
-            return self.output
+        if self._current_stitch:
+            stitch = self._current_knot.stitches[self._current_stitch]
+            # No more steps in this stitch, so it's completed
+            if self._step >= len(stitch):
+                self.finished = True
+                return self.output
+            step = stitch[self._step]
+        else:
+            # No more steps in this knot, so it's completed
+            if self._step >= len(self._current_knot):
+                self.finished = True
+                return self.output
+            step = self._current_knot[self._step]
 
-        step = self._current_knot[self._step]
         match step:
             case Divert():
                 if step.inline:
@@ -281,8 +363,12 @@ class InkScript:
             case [Option(), *others]:
                 self._options = step
                 return self.output
-            case [Text(), *others]:
-                self._add_output(step)
+            case Texts():
+                self._add_output(step.content)
+                if step.divert:
+                    if step.divert.inline:
+                        self.glue = True
+                    return self._go_to_divert(step.divert)
             case Text():
                 self._add_output([step])
 

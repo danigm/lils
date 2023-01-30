@@ -83,7 +83,7 @@ def test_option_suppress_complex():
 
     # test that tags work in options
     assert opt1.tag == "option2"
-    assert opt1.content[0].tag == "tag in text"
+    assert opt1.content[0].content[0].tag == "tag in text"
     assert script.output[1].tag == "tag in text"
 
 
@@ -145,3 +145,51 @@ def test_divert_and_glue():
     script.run()
     script.choose(4)
     assert script.output == ["We hurried home to Savile Row", "as fast as we could."]
+
+
+def test_stitches():
+    script = ink("stitch-01")
+
+    # Default stitch
+    script.run()
+    script.choose(0)
+    assert script.output == ["This is the default"]
+
+    # Stitch divert
+    script.run()
+    script.choose(1)
+    assert script.output == ["The second stitch"]
+
+    # Stitch divert with default
+    script.run()
+    script.choose(2)
+    assert script.output == ["This is the default"]
+
+    # Local divert
+    script.run()
+    script.choose(3)
+    assert script.output == ["Local divert The second stitch"]
+
+
+def test_stitches_complex():
+    script = ink("stitch-02")
+
+    script.run()
+    assert script.output[0] == "Where do you want to go?"
+    assert len(script.options) == 3
+
+    script.run()
+    script.choose(0)
+    assert script.output[0] == "Paris"
+    assert script.output[1] == "We arrived into Paris."
+    assert script.output[2] == "Where do you want to go?"
+
+    script.run()
+    script.choose(1)
+    assert script.output[0] == "We arrived into London."
+    assert script.finished
+
+    script.run()
+    script.choose(2)
+    assert script.output[0] == "Madrid"
+    assert script.output[1] == "Noone wants to go there!"
