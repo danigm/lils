@@ -1,5 +1,6 @@
 import re
 import webbrowser
+import subprocess
 
 
 COMMANDRE = re.compile(r"^(?P<command>[^:]+):\s*(?P<args>([^\s]+\s*)+)$")
@@ -13,6 +14,10 @@ def command_test(args):
 
 def command_url(args):
     webbrowser.open_new(args)
+
+
+def command_xdgopen(args):
+    subprocess.run(["xdg-open", args])
 
 
 def run_command(command_line):
