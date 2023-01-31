@@ -6,6 +6,7 @@ from lils.ink import InkScript
 def show_output(script):
     # TODO: Add ritch text formatting (maybe md)
     for line in script.output:
+        line.run_command()
         if line.reply:
             print(f"- {line}")
         else:
