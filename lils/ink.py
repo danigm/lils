@@ -1,5 +1,6 @@
 import os
 import re
+import webbrowser
 
 from lark import Lark
 from lark import Token
@@ -10,12 +11,16 @@ from dataclasses import dataclass
 from typing import Optional
 
 
+COMMANDRE = re.compile(r"^(?P<command>[^:]+):\s*(?P<args>([^\s]+\s*)+)$")
+
+
 @dataclass
 class Text:
     text: str
     tag: Optional[str] = None
     glue_start: bool = False
     glue_end: bool = False
+    reply: bool = False
 
     def __str__(self):
         return self.text
@@ -299,15 +304,33 @@ class InkScript:
     def options(self):
         return self._options
 
+    def open_url(self, args):
+        webbrowser.open_new(args)
+
+    def commands(self, command_line):
+        match = COMMANDRE.match(command_line)
+        if not match:
+            return
+
+        command = match.group("command")
+        args = match.group("args")
+
+        if command == "url":
+            self.open_url(args)
+        else:
+            # Unknown command
+            return
+
     def choose(self, option=None):
         # TODO: Remove option for next runs
         # https://github.com/inkle/ink/blob/master/Documentation/WritingWithInk.md#choices-can-only-be-used-once
         opt = self.options[option]
         content = opt.content
+        self.commands(opt.tag)
 
         self._output = []
         if opt.display_text:
-            self._output += [Text(text=opt.display_text, tag=opt.text.tag)]
+            self._output += [Text(text=opt.display_text, tag=opt.text.tag, reply=True)]
 
         # [Texts, Divert] | [Texts] | [Divert]
         match content:

@@ -13,8 +13,13 @@ The first step is to learn a bit about the Ink language.
 TODO: Open the url with lils 'run' command functionality
 Open the browser and go to https://www.inklestudios.com/ink/web-tutorial/
 
-* Continue.[] Ok, I got it.
-  -> browser
+* [I know how to do it.] Ok, I got it.
+  -> done
+* Can you do it for me? # url: https://www.inklestudios.com/ink/web-tutorial/
+  Ok, I'll do
+  -> done
 
-=== browser ===
+= done
+Great! so it's time to read
+good luck.
 -> END

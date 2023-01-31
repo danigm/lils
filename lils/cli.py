@@ -4,9 +4,12 @@ from lils.ink import InkScript
 
 
 def show_output(script):
+    # TODO: Add ritch text formatting (maybe md)
     for line in script.output:
-        # TODO: Add ritch text formatting (maybe md)
-        print(line)
+        if line.reply:
+            print(f"- {line}")
+        else:
+            print(line)
 
 
 def show_options(script):
