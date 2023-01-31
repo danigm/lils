@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from .commands import run_command
-from .commands import run_listeners
+from .listeners import run_listeners
 
 
 class Tagged:
