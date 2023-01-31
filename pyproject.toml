@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "lils"
 version = "0.1.0"
-description = ""
+description = "Linux Immersive Learning System"
 authors = ["Daniel Garcia Moreno <daniel.garcia@suse.com>"]
 readme = "README.md"
 
