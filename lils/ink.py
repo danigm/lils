@@ -9,11 +9,15 @@ from dataclasses import dataclass
 from typing import Optional
 
 from .commands import run_command
+from .commands import run_listeners
 
 
 class Tagged:
     def run_command(self):
         run_command(self.tag)
+
+    def run_listeners(self, script, index, question):
+        run_listeners(self.tag, script, index, question)
 
 
 @dataclass
@@ -269,6 +273,7 @@ class InkScript:
         self._parser = self._init_parser()
         self._transformer = InkTransformer()
         self._script = None
+        self._question = 0
         self.finished = False
         self.glue = False
 
@@ -321,6 +326,11 @@ class InkScript:
     def options(self):
         return self._options
 
+    def resolve(self, index, question):
+        # Only choose the option if the question didn't change
+        if self._question == question:
+            self.choose(index)
+
     def choose(self, option=None):
         # TODO: Remove option for next runs
         # https://github.com/inkle/ink/blob/master/Documentation/WritingWithInk.md#choices-can-only-be-used-once
@@ -331,6 +341,8 @@ class InkScript:
         self._output = []
         if opt.display_text:
             self._output += [Text(text=opt.display_text, tag=opt.text.tag, reply=True)]
+
+        self._question += 1
 
         # [Texts, Divert] | [Texts] | [Divert]
         match content:
@@ -377,6 +389,11 @@ class InkScript:
             self._current_stitch = divert.to
         return self._go_next()
 
+    def _set_options(self, options):
+        self._options = options
+        for i, option in enumerate(self._options):
+            option.run_listeners(self, i, self._question)
+
     def _go_next(self):
         """
         Recursive function that loads the next state until it requires user
@@ -405,7 +422,7 @@ class InkScript:
                     self.glue = True
                 return self._go_to_divert(step)
             case [Option(), *others]:
-                self._options = step
+                self._set_options(step)
                 return self.output
             case Texts():
                 self._add_output(step.content)

@@ -1,15 +1,7 @@
-import os
 import pytest
 
-
-from lils.ink import InkScript
 from lils.ink import Text
-
-
-def ink(name):
-    path = os.path.join(os.path.dirname(__file__), "data",
-                        f"{name}.ink")
-    return InkScript(path)
+from .utils import ink
 
 
 @pytest.mark.parametrize("fixture,output",

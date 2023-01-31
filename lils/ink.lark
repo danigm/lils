@@ -41,8 +41,8 @@ GLUEEND: GLUE
 //   -> divert in opt1
 // * opt2 [suppress] with text -> divert # with tag support
 options: option+
-opttext: OPTSTRING? ("[" OPTSUPPRESS? "]" OPTPOST?)? divert? tag?
-option: WS_INLINE* OPT opttext NEWLINE (text | ndivert NEWLINE?)*
+opttext: OPTSTRING? ("[" OPTSUPPRESS? "]" OPTPOST?)? divert? WS_INLINE* tag?
+option: OPT opttext NEWLINE (text | ndivert NEWLINE?)*
 OPTSTRING: /[^#\n\[\]\-=]+/
 OPTSUPPRESS: OPTSTRING
 OPTPOST: OPTSTRING
@@ -85,7 +85,7 @@ TODO: "TODO:" STRING
 // STITCH
 KNOT.3: WS_INLINE* "==="
 STITCH.2: WS_INLINE* "="
-OPT.1: "*"
+OPT.1: WS_INLINE* "*"
 
 NEWLINE.1: CR? LF
 
