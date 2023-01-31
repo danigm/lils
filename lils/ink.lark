@@ -18,7 +18,7 @@ text: (GLUESTART? STRING GLUEEND? divert? tag? NEWLINE*)+
 // /*: comment
 // ->: divert
 // <>: glue
-TEXTSTART.1: /[^#\n\*=\-\/ \t<]/
+TEXTSTART.1: /[^#\*=\-\/\t<\n ]/
            | "-" /[^>]/
            | "/" /[^\/\*]/
            | "<" /[^>]/
@@ -29,7 +29,7 @@ TEXTBODY: /
     )*
 /x
 
-STRING: WS_INLINE* TEXTSTART TEXTBODY
+STRING.0: WS_INLINE* (TEXTSTART TEXTBODY | NEWLINE)
 GLUE: "<>"
 GLUESTART: GLUE
 GLUEEND: GLUE
@@ -41,7 +41,7 @@ GLUEEND: GLUE
 // * opt2 [suppress] with text -> divert # with tag support
 options: option+
 opttext: OPTSTRING? ("[" OPTSUPPRESS? "]" OPTPOST?)? divert? tag?
-option: WS_INLINE* "*" opttext NEWLINE (text | ndivert NEWLINE?)*
+option: WS_INLINE* OPT opttext NEWLINE (text | ndivert NEWLINE?)*
 OPTSTRING: /[^#\n\[\]\-=]+/
 OPTSUPPRESS: OPTSTRING
 OPTPOST: OPTSTRING
@@ -78,10 +78,14 @@ TODO: "TODO:" STRING
 
 // The priority in this rules is important, KNOT has higher priority thant
 // STITCH
-KNOT.3: WS_INLINE* "===" 
+KNOT.3: WS_INLINE* "==="
 STITCH.2: WS_INLINE* "="
+OPT.1: "*"
 
-%import common.NEWLINE
+NEWLINE.1: CR? LF
+
+%import common.CR
+%import common.LF
 %import common.CPP_COMMENT
 %import common.C_COMMENT
 %import common.SH_COMMENT

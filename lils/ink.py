@@ -55,7 +55,7 @@ class Texts:
         if isinstance(other, list):
             return self.content == other
         return self.content == other.content and self.divert == content.divert
- 
+
 
 @dataclass
 class Option:
@@ -109,10 +109,15 @@ class Knot:
 
 
 class InkTransformer(Transformer):
+    def tag(self, s):
+        return s[0]
+
     def text(self, s):
         lines = []
         texts = Texts(content=lines, divert=None)
         glue_start = False
+        newlines = 0
+
         for i in s:
             match i:
                 case(Token(type="GLUESTART")):
@@ -124,6 +129,13 @@ class InkTransformer(Transformer):
                 case(Divert()):
                     i.inline = True
                     texts.divert = i
+                case(Token(type="NEWLINE")):
+                    # paragraph
+                    if newlines == 2:
+                        lines.append(Text(text=""))
+                        newlines = 0
+                    else:
+                        newlines += 1
                 case(Token(type="STRING")):
                     text = i.value.strip()
                     if lines and lines[-1].glue_end:
@@ -163,7 +175,8 @@ class InkTransformer(Transformer):
         return (fulltext.strip(), option.strip(), display_text.strip(), tag, divert)
 
     def option(self, s):
-        opttext, *content = s
+        _opt, opttext, *content = self.discard_newlines(s)
+        content = self.discard_newlines(content)
         (fulltext, option, display_text, tag, divert) = opttext
         text = Text(text=fulltext, tag=tag)
         # If there's a divert in the option, the followed content is ignored
@@ -185,7 +198,9 @@ class InkTransformer(Transformer):
         return s
 
     def knot(self, s):
-        header, content, *rest = s
+        header, content, *rest = self.discard_newlines(s)
+        content = self.discard_newlines(content)
+        rest = self.discard_newlines(rest)
         stitches = {}
         if isinstance(content, Stitch):
             default_stitch = content
@@ -200,7 +215,8 @@ class InkTransformer(Transformer):
         return name.value.strip()
 
     def stitch(self, s):
-        header, content = s
+        header, content = self.discard_newlines(s)
+        content = self.discard_newlines(content)
         return Stitch(name=header, content=content)
 
     def divert(self, s):
@@ -219,11 +235,16 @@ class InkTransformer(Transformer):
     def ndivert(self, s):
         return s[0]
 
-    def NEWLINE(self, token):
-        return Discard
-
     def WS_INLINE(self, token):
         return Discard
+
+    def is_newline(self, l):
+        return isinstance(l, Token) and l.type == "NEWLINE"
+
+    def discard_newlines(self, l):
+        if not isinstance(l, list):
+            return l
+        return [i for i in l if not self.is_newline(i)]
 
 
 class InkScript:

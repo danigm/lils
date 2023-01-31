@@ -24,7 +24,7 @@ def test_basic(fixture, output):
     script = ink(f"basic-{fixture:02d}")
     script.run()
 
-    assert script.output == output
+    assert [i for i in script.output if i.text] == output
     assert len(script.options) == 0
 
 
@@ -193,3 +193,11 @@ def test_stitches_complex():
     script.choose(2)
     assert script.output[0] == "Madrid"
     assert script.output[1] == "Noone wants to go there!"
+
+
+def test_empty_lines():
+    script = ink("empty-lines")
+    script.run()
+
+    empty_lines = [i for i in script.output if not i.text]
+    assert len(empty_lines) == 4
