@@ -201,3 +201,16 @@ def test_empty_lines():
 
     empty_lines = [i for i in script.output if not i.text]
     assert len(empty_lines) == 4
+
+
+def test_include():
+    script = ink("include-01")
+    script.run()
+
+    assert script.output[0] == "Hello, world!"
+    assert len(script.options) == 0
+
+    script = ink("include-02")
+    script.run()
+    assert script.output[0] == "Hello, world!"
+    assert len(script.options) == 3

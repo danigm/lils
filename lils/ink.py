@@ -116,6 +116,12 @@ class Knot:
 
 
 class InkTransformer(Transformer):
+    def include(self, s):
+        _include, filename, *rest = self.discard_newlines(s)
+        path = filename.value.strip()
+        script = InkScript(path)
+        return script
+
     def tag(self, s):
         return s[0]
 
@@ -275,9 +281,19 @@ class InkScript:
         with open(self._ink_path) as f:
             self._tree = self._parser.parse(f.read())
             self._script = self._transformer.transform(self._tree)
+            self._script = self._parse_include(self._script)
             self._parse_knots(self._script)
             self._current_knot = self._knots[""]
             self._current_stitch = None
+
+    def _parse_include(self, script):
+        new_script = []
+        for i in script:
+            if isinstance(i, InkScript):
+                new_script += i._script
+            else:
+                new_script.append(i)
+        return new_script
 
     def _init_parser(self):
         grammar = os.path.join(os.path.dirname(__file__), "ink.lark")
@@ -288,14 +304,13 @@ class InkScript:
         Fill the self._knots property with the content in the tree
         """
 
-        self._current_knot = self._knots[""]
+        self._default_knot = self._knots[""]
         for i in script:
             if isinstance(i, Knot):
                 self._knots[i.name] = i
-                self._current_knot = i
                 continue
 
-            self._current_knot.content.append(i)
+            self._default_knot.content.append(i)
 
 
     @property

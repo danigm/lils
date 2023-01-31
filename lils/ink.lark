@@ -3,6 +3,7 @@
 start: (NEWLINE | stmt)+
 
 ?stmt: text
+     | include
      | options
      | knot
      | divert
@@ -72,6 +73,10 @@ divert_name: CNAME divert_stitch?
 divert_stitch: DOT CNAME
 // Give priority to avoid string matching instead of divert in options
 DOT.2: "."
+
+include: INCLUDE WS_INLINE* FILENAME WS_INLINE* NEWLINE
+INCLUDE.5: "INCLUDE"
+FILENAME.1: /[^\n ]/+ ".ink"
 
 TODO: "TODO:" STRING
 ?tag: SH_COMMENT
