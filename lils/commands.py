@@ -20,6 +20,10 @@ def command_xdgopen(args):
     subprocess.run(["xdg-open", args])
 
 
+def command_launch(args):
+    subprocess.run(["gtk-launch", f"{args}.desktop"])
+
+
 def run_command(command_line):
     if not command_line:
         return
