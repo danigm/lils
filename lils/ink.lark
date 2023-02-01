@@ -75,7 +75,7 @@ GLUEEND: GLUE
 // * opt2 [suppress] with text -> divert # with tag support
 options: option+
 opttext: OPTSTRING? ("[" OPTSUPPRESS? "]" OPTPOST?)? divert? WS_INLINE* tag?
-option: OPT opttext NEWLINE (text | ndivert NEWLINE?)*
+option: OPT opttext NEWLINE (text | operation NEWLINE | divert NEWLINE?)*
 OPTSTRING: /[^#\n\[\]\-=]+/
 OPTSUPPRESS: OPTSTRING
 OPTPOST: OPTSTRING
@@ -95,13 +95,13 @@ knot: knotheader NEWLINE content? stitch*
 stitchheader: STITCH WS_INLINE* CNAME
 stitch: stitchheader NEWLINE content
 
-content: (text | options | ndivert | operation | NEWLINE)+
+content: (text | options | divert | operation | NEWLINE)+
 
 // Divert
 // -> knot_name
 // -> knot_name.stitch
-ndivert: WS_INLINE* divert
-divert: "->" WS_INLINE* divert_name
+NDIVERT.3: WS_INLINE* "->"
+divert: NDIVERT WS_INLINE* divert_name
 divert_name: CNAME divert_stitch?
 divert_stitch: DOT CNAME
 // Give priority to avoid string matching instead of divert in options

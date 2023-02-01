@@ -213,7 +213,7 @@ def test_vars():
 
     script.run()
     assert script.output[0] == "Hello, world!"
-    assert len(script.options) == 2
+    assert len(script.options) == 3
     assert script.var("x") == 1.0
     assert script.var("y") == 3
     assert script.var("z") == 5
@@ -231,3 +231,12 @@ def test_vars():
     assert script.output[0] == "op2"
     assert script.var("x") == 3.0
     assert script.var("y") == -23
+
+
+def test_op_option():
+    script = ink("vars-01")
+    script.run()
+    assert script.output[0] == "Hello, world!"
+    script.choose(2)
+    assert script.output[0] == "op3"
+    assert script.var("x") == 2.5

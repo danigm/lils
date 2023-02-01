@@ -343,8 +343,8 @@ class InkTransformer(Transformer):
         stitch = stitch[0] if stitch else None
         return (knot.value.strip(), stitch)
 
-    def ndivert(self, s):
-        return s[0]
+    def NDIVERT(self, token):
+        return Discard
 
     def WS_INLINE(self, token):
         return Discard
@@ -457,17 +457,22 @@ class InkScript:
             self._output += [Text(text=opt.display_text, tag=opt.text.tag, reply=True)]
 
         self._question += 1
+        divert = None
 
-        # [Texts, Divert] | [Texts] | [Divert]
-        match content:
-            case [Texts(content=content), divert]:
-                self._output += content
-                self._go_to_divert(divert)
-            case [Texts(content=content)]:
-                self._output += content
-                self._go_next()
-            case [divert]:
-                self._go_to_divert(divert)
+        for i in content:
+            match i:
+                case Texts(content=content):
+                    self._output += content
+                case Assignment():
+                    self._vars[i.var] = i.evaluate(self._vars)
+                case Divert():
+                    divert = i
+                    break
+
+        if divert:
+            self._go_to_divert(divert)
+        else:
+            self._go_next()
 
         self._changed()
 

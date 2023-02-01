@@ -7,6 +7,9 @@ VAR running = true
 Hello, world!
 * op1 -> op1
 * op2 -> op2
+* op3
+  ~ x = x + 1.5
+  -> END
 
 === op1 ===
 ~ x = x + 1
