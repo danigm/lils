@@ -7,7 +7,40 @@ start: (NEWLINE | stmt)+
      | options
      | knot
      | divert
+     | expr
      | TODO              -> todo
+
+// Variable usage
+?expr: variable
+     | operation
+
+VAR.2: WS_INLINE* "VAR"
+OP.2: WS_INLINE* "~"
+ADD.2: WS_INLINE* "+"
+SUB.2: WS_INLINE* "-"
+MUL.2: WS_INLINE* "*"
+DIV.2: WS_INLINE* "/"
+NEG.2: "-"
+
+variable: VAR WS_INLINE* assignment
+operation: OP WS_INLINE* assignment
+assignment: CNAME WS_INLINE? "=" WS_INLINE? sum
+
+?sum: product
+   | sum ADD WS_INLINE? product   -> add
+   | sum SUB WS_INLINE? product   -> sub
+
+?product: atom
+    | product MUL WS_INLINE? atom  -> mul
+    | product DIV WS_INLINE? atom  -> div
+
+?atom: "null"                -> const_none
+     | "true"                -> const_true
+     | "false"               -> const_false
+     | ESCAPED_STRING        -> str
+     | NUMBER                -> number
+     | CNAME                 -> var
+     | NEG WS_INLINE? atom   -> neg
 
 // Multiple line of plain text with tags
 text: (GLUESTART? STRING GLUEEND? divert? tag? NEWLINE*)+
@@ -62,7 +95,7 @@ knot: knotheader NEWLINE content? stitch*
 stitchheader: STITCH WS_INLINE* CNAME
 stitch: stitchheader NEWLINE content
 
-content: (text | options | ndivert | NEWLINE)+
+content: (text | options | ndivert | operation | NEWLINE)+
 
 // Divert
 // -> knot_name
@@ -96,6 +129,8 @@ NEWLINE.1: CR? LF
 %import common.SH_COMMENT
 %import common.WS_INLINE
 %import common.CNAME
+%import common.ESCAPED_STRING
+%import common.NUMBER
 
 %ignore CPP_COMMENT
 %ignore C_COMMENT

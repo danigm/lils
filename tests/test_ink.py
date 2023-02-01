@@ -206,3 +206,28 @@ def test_include():
     script.run()
     assert script.output[0] == "Hello, world!"
     assert len(script.options) == 3
+
+
+def test_vars():
+    script = ink("vars-01")
+
+    script.run()
+    assert script.output[0] == "Hello, world!"
+    assert len(script.options) == 2
+    assert script.var("x") == 1.0
+    assert script.var("y") == 3
+    assert script.var("z") == 5
+    assert script.var("background") == "Test"
+    assert script.var("running") == True
+
+    script.choose(0)
+    assert script.output[0] == "op1"
+    assert script.var("x") == 2.0
+    assert script.var("background") == "Test-op1"
+
+    script.run()
+    assert script.output[0] == "Hello, world!"
+    script.choose(1)
+    assert script.output[0] == "op2"
+    assert script.var("x") == 3.0
+    assert script.var("y") == -23

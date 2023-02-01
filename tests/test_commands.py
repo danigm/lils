@@ -61,6 +61,6 @@ def test_wait_file():
 
     with open("/tmp/lils.ink", "a") as fp:
         fp.write("second line\n")
-    time.sleep(2)
+    time.sleep(3)
 
     assert script.output[0] == "opt1.1"

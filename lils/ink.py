@@ -6,10 +6,12 @@ from lark import Transformer
 from lark.visitors import Discard
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Any
 
 from .commands import run_command
 from .listeners import run_listeners
+
+from operator import add, sub, mul, truediv as div, neg
 
 
 class Tagged:
@@ -119,7 +121,99 @@ class Knot:
         return cls(name=name, content=[], stitches={})
 
 
+class Evaluable:
+    pass
+
+
+@dataclass
+class Assignment(Evaluable):
+    var: str
+    value: Optional[Any] = None
+    declaration: bool = False
+
+    def evaluate(self, context):
+        v = self.value
+        if isinstance(v, Evaluable):
+            v = v.evaluate(context)
+        return v
+
+
+@dataclass
+class Var(Evaluable):
+    name: str
+
+    def evaluate(self, context):
+        return context.get(self.name)
+
+
+@dataclass
+class Op(Evaluable):
+    operator: Any
+    item1: Any
+    item2: Any
+
+    def evaluate(self, context):
+        i1 = self.item1
+        if isinstance(i1, Evaluable):
+            i1 = i1.evaluate(context)
+        i2 = self.item2
+        if isinstance(i2, Evaluable):
+            i2 = i2.evaluate(context)
+        ops = filter(None, (i1, i2))
+        return self.operator(*ops)
+
+
 class InkTransformer(Transformer):
+    const_none = lambda self, _: None
+    const_true = lambda self, _: True
+    const_false = lambda self, _: False
+
+    def var(self, s):
+        (s, ) = s
+        return Var(s.value)
+
+    def add(self, s):
+        item1, _op, item2 = s
+        return Op(add, item1, item2)
+
+    def sub(self, s):
+        item1, _op, item2 = s
+        return Op(sub, item1, item2)
+
+    def mul(self, s):
+        item1, _op, item2 = s
+        return Op(mul, item1, item2)
+
+    def div(self, s):
+        item1, _op, item2 = s
+        return Op(div, item1, item2)
+
+    def neg(self, s):
+        _op, item1 = s
+        return Op(neg, item1, None)
+
+    def variable(self, s):
+        assignment = s[1]
+        assignment.declaration = True
+        return assignment
+
+    def operation(self, s):
+        assignment = s[1]
+        assignment.declaration = False
+        return assignment
+
+    def assignment(self, s):
+        name, value = s
+        return Assignment(var=name.value.strip(), value=value)
+
+    def str(self, s):
+        (s, ) = s
+        return s.value[1:-1]
+
+    def number(self, s):
+        (s, ) = s
+        return float(s.value)
+
     def include(self, s):
         _include, filename, *rest = self.discard_newlines(s)
         path = filename.value.strip()
@@ -273,6 +367,7 @@ class InkScript:
         self._parser = self._init_parser()
         self._transformer = InkTransformer()
         self._script = None
+        self._vars = {}
         self._question = 0
         self.finished = False
         self.glue = False
@@ -288,6 +383,7 @@ class InkScript:
             self._script = self._transformer.transform(self._tree)
             self._script = self._parse_include(self._script)
             self._parse_knots(self._script)
+            self._init_vars()
             self._current_knot = self._knots[""]
             self._current_stitch = None
 
@@ -311,12 +407,18 @@ class InkScript:
 
         self._default_knot = self._knots[""]
         for i in script:
-            if isinstance(i, Knot):
-                self._knots[i.name] = i
-                continue
-
+            match i:
+                case Knot():
+                    self._knots[i.name] = i
+                    continue
             self._default_knot.content.append(i)
 
+    def _init_vars(self):
+        self._vars = {}
+        for i in self._script:
+            match i:
+                case Assignment(var=n, value=v, declaration=True):
+                    self._vars[n] = i.evaluate(self._vars)
 
     @property
     def output(self):
@@ -325,6 +427,13 @@ class InkScript:
     @property
     def options(self):
         return self._options
+
+    @property
+    def vars(self):
+        return self._vars
+
+    def var(self, name, default=None):
+        return self._vars.get(name, default)
 
     def resolve(self, index, question):
         # Only choose the option if the question didn't change
@@ -361,6 +470,7 @@ class InkScript:
         self._current_knot = self._knots[""]
         self._current_stitch = None
         self.glue = False
+        self._init_vars()
         return self._go_next()
 
     def _add_output(self, texts):
@@ -432,6 +542,8 @@ class InkScript:
                     return self._go_to_divert(step.divert)
             case Text():
                 self._add_output([step])
+            case Assignment(declaration=False):
+                self._vars[step.var] = step.evaluate(self._vars)
 
         self._step += 1
         return self._go_next()
