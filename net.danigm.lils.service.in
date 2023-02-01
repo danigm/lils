@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=net.danigm.lils
+Exec=@bindir@/lils-dbus

@@ -359,7 +359,7 @@ class InkTransformer(Transformer):
 
 
 class InkScript:
-    def __init__(self, path):
+    def __init__(self, path, on_change=None):
         self._ink_path = path
         self._step = 0
         self._output = []
@@ -369,6 +369,7 @@ class InkScript:
         self._script = None
         self._vars = {}
         self._question = 0
+        self._on_change = on_change
         self.finished = False
         self.glue = False
 
@@ -440,6 +441,10 @@ class InkScript:
         if self._question == question:
             self.choose(index)
 
+    def _changed(self):
+        if self._on_change:
+            self._on_change(self.output)
+
     def choose(self, option=None):
         # TODO: Remove option for next runs
         # https://github.com/inkle/ink/blob/master/Documentation/WritingWithInk.md#choices-can-only-be-used-once
@@ -463,6 +468,8 @@ class InkScript:
                 self._go_next()
             case [divert]:
                 self._go_to_divert(divert)
+
+        self._changed()
 
     def run(self):
         self._step = 0
