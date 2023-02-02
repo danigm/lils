@@ -37,17 +37,16 @@ const DEFAULT_IFACE = `
         </node>`
 
 var LilsDbus = class LilsDbus {
-    constructor() {
+    constructor(onChange) {
         this._id = DEFAULT_ID;
         this._path = DEFAULT_PATH;
         this._iface = DEFAULT_IFACE;
 
         const Proxy = Gio.DBusProxy.makeProxyWrapper(this._iface);
         this._proxy = new Proxy(Gio.DBus.session, this._id, this._path);
-        // TODO: No signal 'changed' on object 'GDBusProxy'
-        // this._proxy.connect('changed', () => {
-        //     log('*********** state changed');
-        // });
+        this._proxy.connectSignal('changed', () => {
+            onChange();
+        });
     }
 
     grouped(messages) {

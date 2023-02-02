@@ -39,6 +39,9 @@ async def wait_newfile(script, index, question, path):
     p = pathlib.Path(path)
 
     while True:
+        if script._question != question:
+            return
+
         if p.exists():
             break
         await asyncio.sleep(0.2)
@@ -55,6 +58,9 @@ async def wait_infile(script, index, question, args):
     p = pathlib.Path(path)
 
     while True:
+        if script._question != question:
+            return
+
         content = ""
         with open(path) as f:
             content = f.read()
@@ -70,6 +76,9 @@ async def wait_ps(script, index, question, args):
     """
 
     while True:
+        if script._question != question:
+            return
+
         content = subprocess.check_output(["ps", "-eaf"])
         if args in content.decode():
             break
@@ -94,5 +103,9 @@ def run_listeners(command_line, script, index, question):
         fn = globals()[command]
         args = (script, index, question, args)
         task = asyncio.run_coroutine_threadsafe(fn(*args), _LOOP)
-        task.add_done_callback(background_tasks.discard)
+        task.add_done_callback(discard_task)
         background_tasks.add(task)
+
+
+def discard_task(task):
+    background_tasks.discard(task)

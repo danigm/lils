@@ -244,9 +244,9 @@ class InkTransformer(Transformer):
                     # paragraph
                     if newlines == 2:
                         lines.append(Text(text=""))
-                        newlines = 0
                     else:
                         newlines += 1
+                        continue
                 case(Token(type="STRING")):
                     text = i.value.strip()
                     if lines and lines[-1].glue_end:
@@ -256,6 +256,8 @@ class InkTransformer(Transformer):
 
                     lines.append(Text(text=text, tag="", glue_start=glue_start))
                     glue_start = False
+
+            newlines = 0
         return texts
 
     def opttext(self, s):
@@ -486,7 +488,6 @@ class InkScript:
         return self._go_next()
 
     def _add_output(self, texts):
-
         # check glue
         if self._output:
             last = self._output[-1]

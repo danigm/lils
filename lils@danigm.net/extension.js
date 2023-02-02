@@ -79,6 +79,12 @@ class Extension {
         this.showMessages();
     }
 
+    onChange() {
+        this.destroyMessage();
+        this._messages = this._lils.output();
+        this.showMessages();
+    }
+
     createMenu() {
         this._menu = this._indicator.menu;
         this._menu.removeAll();
@@ -107,7 +113,9 @@ class Extension {
         this._indicator.add_child(icon);
         Main.panel.addToStatusArea(indicatorName, this._indicator);
 
-        this._lils = new Service.LilsDbus();
+        this._lils = new Service.LilsDbus(() => {
+            this.onChange();
+        });
 
         // TODO: remove this line
         // this.debug();

@@ -132,7 +132,11 @@ class RunDialog extends ModalDialog.ModalDialog {
 
     _run(input) {
         this._commandError = false;
-        this.callback(input);
+        try {
+            this.callback(input);
+        } catch(e) {
+            log(e);
+        }
     }
 
     _showError(message) {
