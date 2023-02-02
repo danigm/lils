@@ -38,6 +38,7 @@ class Extension {
         this._menu = null;
         this._lils = null;
         this._messages = [];
+        this._currentMessage = null;
     }
 
     launchGame() {
@@ -48,6 +49,11 @@ class Extension {
         });
     }
 
+    destroyMessage() {
+        this._currentMessage.destroy();
+        this._currentMessage = null;
+    }
+
     showMessages() {
         let message = this._messages.shift();
         if (!message)
@@ -56,16 +62,16 @@ class Extension {
         const options = this._lils.options();
         const hasNext = this._messages.length > 1;
 
-        message = new Message.Message(message, options, hasNext);
-        message.connect('next', () => {
-            message.destroy();
+        this._currentMessage = new Message.Message(message, options, hasNext);
+        this._currentMessage.connect('next', () => {
+            this.destroyMessage();
             this.showMessages();
         });
-        message.connect('option-selected', (button, option) => {
-            message.destroy();
+        this._currentMessage.connect('option-selected', (button, option) => {
+            this.destroyMessage();
             this.chooseOption(option);
         });
-        message.present();
+        this._currentMessage.present();
     }
 
     chooseOption(option) {
@@ -108,11 +114,11 @@ class Extension {
     }
 
     disable() {
-
         this._indicator.destroy();
         this._indicator = null;
         this._menu = null;
         this._lils = null;
+        this.destroyMessage();
     }
 
 
