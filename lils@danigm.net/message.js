@@ -63,7 +63,7 @@ var Message = GObject.registerClass({
         const button = new St.Button({
             style_class: 'option-button',
             can_focus: true,
-            x_align: Clutter.ActorAlign.END,
+            x_align: Clutter.ActorAlign.START,
         });
         button.connect('clicked', () => {
             this.emit('option-selected', index);
@@ -83,6 +83,7 @@ var Message = GObject.registerClass({
         this.y = (monitor.y + monitor.height
                   - this.height - MARGIN
                   - Main.panel.get_height());
+        this.width = monitor.width / 2 - MARGIN * 2;
 
         const endX = this.x - this.width - MARGIN;
 

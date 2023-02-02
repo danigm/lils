@@ -56,11 +56,11 @@ class Extension {
 
     showMessages() {
         let message = this._messages.shift();
-        if (!message)
+        if (typeof message === 'undefined')
             return;
 
         const options = this._lils.options();
-        const hasNext = this._messages.length > 1;
+        const hasNext = this._messages.length > 0;
 
         this._currentMessage = new Message.Message(message, options, hasNext);
         this._currentMessage.connect('next', () => {
