@@ -110,7 +110,7 @@ class Extension {
         this._lils = new Service.LilsDbus();
 
         // TODO: remove this line
-        this.debug();
+        // this.debug();
     }
 
     disable() {

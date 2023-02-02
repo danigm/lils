@@ -62,6 +62,8 @@ var LilsDbus = class LilsDbus {
                 group = `${group}${str}\n`;
             }
         });
+        // The last one
+        grouped.push(group);
 
         return grouped;
     }

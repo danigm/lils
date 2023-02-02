@@ -65,7 +65,7 @@ class LilsService(Gio.Application):
         self.hold()
 
         ret = getattr(self, method)(params)
-        if ret:
+        if ret is not None:
             ret = self.convert_variant_arg(ret)
             invocation.return_value(ret)
 
@@ -174,6 +174,8 @@ class LilsService(Gio.Application):
                 return GLib.Variant('(as)', ([str(i) for i in variant], ))
             case [Option(), *rest]:
                 return GLib.Variant('(as)', ([i.option for i in variant], ))
+            case []:
+                return GLib.Variant('(as)', ([], ))
 
 
 def main():
