@@ -1,6 +1,7 @@
 import time
 import pytest
 from unittest.mock import patch
+import subprocess
 
 from .utils import ink
 
@@ -64,3 +65,23 @@ def test_wait_file():
     time.sleep(3)
 
     assert script.output[0] == "opt1.1"
+
+
+def test_wait_ps():
+    script = ink(f"wait-03")
+    script.run()
+
+    assert len(script.options) == 2
+    assert script.output[0] != "opt1"
+
+    p = subprocess.Popen(['yes', 'testwait'], stdout=subprocess.DEVNULL)
+    time.sleep(2)
+    p.kill()
+
+    assert script.output[0] == "opt1"
+
+    script.run()
+    assert len(script.options) == 2
+    assert script.output[0] != "opt2"
+    time.sleep(2)
+    assert script.output[0] == "Wait for running process"

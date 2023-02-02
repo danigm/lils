@@ -1,6 +1,7 @@
 import re
 import asyncio
 import threading
+import subprocess
 
 import pathlib
 
@@ -60,6 +61,20 @@ async def wait_infile(script, index, question, args):
         if p.exists() and line in content:
             break
         await asyncio.sleep(1)
+    script.resolve(index, question)
+
+
+async def wait_ps(script, index, question, args):
+    """
+    Wait for a line of text appearing in ps -eaf
+    """
+
+    while True:
+        content = subprocess.check_output(["ps", "-eaf"])
+        if args in content.decode():
+            break
+        await asyncio.sleep(1)
+
     script.resolve(index, question)
 
 
