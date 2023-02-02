@@ -1,0 +1,43 @@
+/* Add your custom extension styling here */
+
+.message-box {
+    background-color: rgba(255, 255, 255, .96);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px 8px rgba(0, 0, 0, .2);
+    padding: 25px;
+    margin-bottom: 33px;
+}
+
+.message-box .message-text {
+    color: black;
+    margin: 30px;
+    margin-bottom: 25px;
+    font: 18px "Metropolis Medium, Sans-Serif";
+}
+
+.option-button,
+.message-button {
+    background-color: #1c71d8;
+
+    border-radius: 50px;
+    border: none;
+    font-family: Metropolis Semibold, sans-serif;
+    font-weight: 600; /* Semibold */
+    font-size: 15px;
+    text-shadow: 0 0.5px 2px rgba(0, 0, 0, .4);
+
+    padding: 5px;
+    margin-bottom: 0px;
+}
+
+.option-button:hover,
+.message-button:hover {
+    background-color: #3584e4;
+    box-shadow: 0 2px 2px 2px rgba(0, 0, 0, .1);
+}
+
+.option-button {
+    padding: 10px;
+    margin-bottom: 10px;
+    font-size: 18px;
+}

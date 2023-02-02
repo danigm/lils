@@ -1,0 +1,8 @@
+{
+  "name": "lils",
+  "description": "Linux Immersive Learning System",
+  "uuid": "lils@danigm.net",
+  "shell-version": [
+    "43"
+  ]
+}
