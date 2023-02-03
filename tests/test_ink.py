@@ -192,7 +192,7 @@ def test_empty_lines():
     script.run()
 
     empty_lines = [i for i in script.output if not i.text]
-    assert len(empty_lines) == 4
+    assert len(empty_lines) == 3
 
 
 def test_include():

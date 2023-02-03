@@ -16,7 +16,7 @@ def test_basic_command(url, test):
     assert test.call_count == 0
     script.output[1].run_command()
     assert test.call_count == 0
-    script.output[3].run_command()
+    script.output[2].run_command()
     assert test.call_count == 1
     assert test.call_args == (("arg1 arg2",), )
 
