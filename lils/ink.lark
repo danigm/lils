@@ -34,6 +34,7 @@ assignment: CNAME WS_INLINE? "=" WS_INLINE? sum
     | product MUL WS_INLINE? atom  -> mul
     | product DIV WS_INLINE? atom  -> div
 
+// TODO: Add parenthesis operations here
 ?atom: "null"                -> const_none
      | "true"                -> const_true
      | "false"               -> const_false
@@ -41,6 +42,28 @@ assignment: CNAME WS_INLINE? "=" WS_INLINE? sum
      | NUMBER                -> number
      | CNAME                 -> var
      | NEG WS_INLINE? atom   -> neg
+
+EQ.3: WS_INLINE* "=="
+LT.2: WS_INLINE* "<"
+GT.2: WS_INLINE* ">"
+LTE.2: WS_INLINE* "<="
+GTE.2: WS_INLINE* ">="
+AND.2: WS_INLINE* "&&"
+OR.2: WS_INLINE* "||"
+NOT.2: WS_INLINE* "not"
+// TODO: Add parenthesis operations here
+LOGICSTART.2: WS_INLINE? "{"
+LOGICSEND.2: WS_INLINE? "}"
+logic: LOGICSTART WS_INLINE? condition LOGICSEND
+?condition: sum
+         | sum EQ WS_INLINE? sum              -> eq
+         | sum LT WS_INLINE? sum              -> lt
+         | sum GT WS_INLINE? sum              -> gt
+         | sum LTE WS_INLINE? sum             -> lte
+         | sum GTE WS_INLINE? sum             -> gte
+         | condition AND WS_INLINE? condition -> and_
+         | condition OR WS_INLINE? condition  -> or_
+         | NOT WS_INLINE? condition           -> not_
 
 // Multiple line of plain text with tags
 text: (GLUESTART? STRING GLUEEND? divert? tag? NEWLINE*)+
@@ -74,9 +97,9 @@ GLUEEND: GLUE
 //   -> divert in opt1
 // * opt2 [suppress] with text -> divert # with tag support
 options: option+
-opttext: OPTSTRING? ("[" OPTSUPPRESS? "]" OPTPOST?)? divert? WS_INLINE* tag?
+opttext: logic? OPTSTRING? ("[" OPTSUPPRESS? "]" OPTPOST?)? divert? WS_INLINE* tag?
 option: OPT opttext NEWLINE (text | operation NEWLINE | divert NEWLINE?)*
-OPTSTRING: /[^#\n\[\]\-=]+/
+OPTSTRING: /[^#\n\[\]\-={}]+/
 OPTSUPPRESS: OPTSTRING
 OPTPOST: OPTSTRING
 

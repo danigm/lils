@@ -12,6 +12,11 @@ from .commands import run_command
 from .listeners import run_listeners
 
 from operator import add, sub, mul, truediv as div, neg
+from operator import eq, lt, gt, le, ge, not_, and_, or_
+
+
+class Evaluable:
+    pass
 
 
 class Tagged:
@@ -71,11 +76,29 @@ class Texts:
 
 
 @dataclass
+class Condition(Evaluable):
+    operator: Any
+    item1: Any
+    item2: Any
+
+    def evaluate(self, context):
+        i1 = self.item1
+        if isinstance(i1, Evaluable):
+            i1 = i1.evaluate(context)
+        i2 = self.item2
+        if isinstance(i2, Evaluable):
+            i2 = i2.evaluate(context)
+        ops = filter(lambda i: i is not None, (i1, i2))
+        return self.operator(*ops)
+
+
+@dataclass
 class Option(Tagged):
     text: Text
     option: str
     display_text: str
     content: [Text]
+    logic: Optional[Condition] = None
 
     def __str__(self):
         content = "\n\t".join(str(i) for i in self.content)
@@ -84,6 +107,11 @@ class Option(Tagged):
     @property
     def tag(self):
         return self.text.tag
+
+    def is_available(self, context):
+        if not self.logic:
+            return True
+        return self.logic.evaluate(context)
 
 
 @dataclass
@@ -121,10 +149,6 @@ class Knot:
         return cls(name=name, content=[], stitches={})
 
 
-class Evaluable:
-    pass
-
-
 @dataclass
 class Assignment(Evaluable):
     var: str
@@ -147,20 +171,8 @@ class Var(Evaluable):
 
 
 @dataclass
-class Op(Evaluable):
-    operator: Any
-    item1: Any
-    item2: Any
-
-    def evaluate(self, context):
-        i1 = self.item1
-        if isinstance(i1, Evaluable):
-            i1 = i1.evaluate(context)
-        i2 = self.item2
-        if isinstance(i2, Evaluable):
-            i2 = i2.evaluate(context)
-        ops = filter(None, (i1, i2))
-        return self.operator(*ops)
+class Op(Condition):
+    pass
 
 
 class InkTransformer(Transformer):
@@ -260,6 +272,42 @@ class InkTransformer(Transformer):
             newlines = 0
         return texts
 
+    def eq(self, s):
+        op1, _eq, op2 = s
+        return Condition(operator=eq, item1=op1, item2=op2)
+
+    def lt(self, s):
+        op1, _op, op2 = s
+        return Condition(operator=lt, item1=op1, item2=op2)
+
+    def gt(self, s):
+        op1, _op, op2 = s
+        return Condition(operator=gt, item1=op1, item2=op2)
+
+    def gte(self, s):
+        op1, _op, op2 = s
+        return Condition(operator=ge, item1=op1, item2=op2)
+
+    def lte(self, s):
+        op1, _op, op2 = s
+        return Condition(operator=le, item1=op1, item2=op2)
+
+    def and_(self, s):
+        op1, _op, op2 = s
+        return Condition(operator=and_, item1=op1, item2=op2)
+
+    def or_(self, s):
+        op1, _op, op2 = s
+        return Condition(operator=or_, item1=op1, item2=op2)
+
+    def not_(self, s):
+        _op, op1 = s
+        return Condition(operator=not_, item1=op1, item2=None)
+
+    def logic(self, s):
+        _start, operation, _end = s
+        return operation
+
     def opttext(self, s):
         display_text = ""
         pre = ""
@@ -267,10 +315,13 @@ class InkTransformer(Transformer):
         post = ""
         tag = ""
         divert = None
+        logic = None
 
         for i in s:
             if isinstance(i, Divert):
                 divert = i
+            elif isinstance(i, Condition):
+                logic = i
             elif i.type == "OPTSTRING":
                 pre = i.value
             elif i.type == "OPTSUPPRESS":
@@ -285,17 +336,17 @@ class InkTransformer(Transformer):
         display_text = f"{pre}{post}"
         fulltext = f"{option}{display_text}"
 
-        return (fulltext.strip(), option.strip(), display_text.strip(), tag, divert)
+        return (fulltext.strip(), option.strip(), display_text.strip(), tag, divert, logic)
 
     def option(self, s):
         _opt, opttext, *content = self.discard_newlines(s)
         content = self.discard_newlines(content)
-        (fulltext, option, display_text, tag, divert) = opttext
+        (fulltext, option, display_text, tag, divert, logic) = opttext
         text = Text(text=fulltext, tag=tag)
         # If there's a divert in the option, the followed content is ignored
         if divert:
             content = [divert]
-        return Option(content=content, text=text, display_text=display_text, option=option)
+        return Option(content=content, text=text, display_text=display_text, option=option, logic=logic)
 
     def options(self, s):
         return s
@@ -366,6 +417,7 @@ class InkScript:
         self._step = 0
         self._output = []
         self._options = []
+        self._allopts = []
         self._parser = self._init_parser()
         self._transformer = InkTransformer()
         self._script = None
@@ -437,6 +489,12 @@ class InkScript:
 
     def var(self, name, default=None):
         return self._vars.get(name, default)
+
+    def set(self, name, value):
+        self._vars[name] = value
+        # Update options
+        self._set_options(self._allopts)
+        self._changed()
 
     def resolve(self, index, question):
         # Only choose the option if the question didn't change
@@ -513,7 +571,8 @@ class InkScript:
         return self._go_next()
 
     def _set_options(self, options):
-        self._options = options
+        self._allopts = options
+        self._options = [opt for opt in options if opt.is_available(self._vars)]
         for i, option in enumerate(self._options):
             option.run_listeners(self, i, self._question)
 
@@ -523,6 +582,7 @@ class InkScript:
         input
         """
 
+        self._allopts = []
         self._options = []
 
         if self._current_stitch:

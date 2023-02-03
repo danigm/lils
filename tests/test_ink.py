@@ -240,3 +240,40 @@ def test_op_option():
     script.choose(2)
     assert script.output[0] == "op3"
     assert script.var("x") == 2.5
+
+
+def test_logic():
+    script = ink("logic-01")
+    script.run()
+    assert script.output[0] == "Hello, world!"
+    assert len(script.options) == 1
+    assert script.options[0].display_text == "opt1"
+
+    script.set("opts", 1)
+    assert len(script.options) == 1
+    assert script.options[0].display_text == "opt2"
+
+    script.set("opts", 2)
+    assert len(script.options) == 1
+    assert script.options[0].display_text == "opt3, with more text"
+
+    script.set("opts", 3)
+    assert len(script.options) == 2
+    assert script.options[0].display_text == "opt3, with more text"
+    assert script.options[1].display_text == ""
+
+    script.set("opts", 4)
+    assert len(script.options) == 2
+    assert script.options[0].display_text == "opt3, with more text"
+    assert script.options[1].display_text == ""
+
+    script.set("opts", 5)
+    assert len(script.options) == 3
+    assert script.options[0].display_text == "opt3, with more text"
+    assert script.options[1].display_text == ""
+    assert script.options[2].display_text == "opt5"
+
+    script.set("opts", 6)
+    assert len(script.options) == 2
+    assert script.options[0].display_text == "opt3, with more text"
+    assert script.options[1].display_text == ""
