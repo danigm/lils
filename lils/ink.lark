@@ -21,6 +21,7 @@ SUB.2: WS_INLINE* "-"
 MUL.2: WS_INLINE* "*"
 DIV.2: WS_INLINE* "/"
 NEG.2: "-"
+VARNAME: (CNAME | ".")+
 
 variable: VAR WS_INLINE* assignment
 operation: OP WS_INLINE* assignment
@@ -40,7 +41,7 @@ assignment: CNAME WS_INLINE? "=" WS_INLINE? sum
      | "false"               -> const_false
      | ESCAPED_STRING        -> str
      | NUMBER                -> number
-     | CNAME                 -> var
+     | VARNAME               -> var
      | NEG WS_INLINE? atom   -> neg
 
 EQ.3: WS_INLINE* "=="

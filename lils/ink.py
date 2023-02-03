@@ -12,7 +12,7 @@ from .commands import run_command
 from .listeners import run_listeners
 
 from operator import add, sub, mul, truediv as div, neg
-from operator import eq, lt, gt, le, ge, not_, and_, or_
+from operator import eq, lt, gt, le, ge, not_, and_, or_, truth
 
 
 class Evaluable:
@@ -306,6 +306,8 @@ class InkTransformer(Transformer):
 
     def logic(self, s):
         _start, operation, _end = s
+        if not isinstance(operation, Condition):
+            return Condition(operator=truth, item1=operation, item2=None)
         return operation
 
     def opttext(self, s):
@@ -474,6 +476,10 @@ class InkScript:
             match i:
                 case Assignment(var=n, value=v, declaration=True):
                     self._vars[n] = i.evaluate(self._vars)
+        for k, v in self._knots.items():
+            self._vars[k] = 0
+            for s in v.stitches:
+                self._vars[f"{k}.{s}"] = 0
 
     @property
     def output(self):
@@ -565,9 +571,15 @@ class InkScript:
         if divert.to in self._knots:
             self._current_knot = self._knots[divert.to]
             self._current_stitch = divert.stitch
+            self._vars[divert.to] += 1
+            if divert.stitch:
+                self._vars[f"{divert.to}.{divert.stitch}"] += 1
         else:
             # maybe a local divert to a stitch
             self._current_stitch = divert.to
+            k = self._current_knot.name
+            self._vars[f"{k}.{divert.to}"] += 1
+
         return self._go_next()
 
     def _set_options(self, options):

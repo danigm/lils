@@ -277,3 +277,51 @@ def test_logic():
     assert len(script.options) == 2
     assert script.options[0].display_text == "opt3, with more text"
     assert script.options[1].display_text == ""
+
+def test_visit_logic():
+    script = ink("logic-02")
+    script.run()
+    assert script.output[0] == "At the Airport"
+    assert len(script.options) == 1
+    assert script.options[0].display_text == "paris"
+    assert script.var("travel") == 1
+    assert script.var("paris") == 0
+    assert script.var("spain.madrid") == 0
+    assert script.var("travel.london") == 0
+
+    script.choose(0)
+    assert script.output[0] == "paris"
+    assert len(script.options) == 3
+    assert script.options[0].display_text == "paris"
+    assert script.var("travel") == 2
+    assert script.var("paris") == 1
+    assert script.var("spain.madrid") == 0
+    assert script.var("travel.london") == 0
+
+    script.choose(2)
+    assert script.output[0] == "madrid"
+    assert len(script.options) == 3
+    assert script.options[0].display_text == "paris"
+    assert script.var("travel") == 3
+    assert script.var("paris") == 1
+    assert script.var("spain.madrid") == 1
+    assert script.var("travel.london") == 0
+
+    script.choose(1)
+    assert script.output[0] == "london"
+    assert len(script.options) == 2
+    assert script.options[0].display_text == "paris"
+    assert script.var("travel") == 4
+    assert script.var("paris") == 1
+    assert script.var("spain.madrid") == 1
+    assert script.var("travel.london") == 1
+
+    script.choose(0)
+    assert script.output[0] == "paris"
+    assert len(script.options) == 3
+    assert script.options[-1].display_text == "home"
+    assert script.options[0].display_text == "paris"
+    assert script.var("travel") == 5
+    assert script.var("paris") == 2
+    assert script.var("spain.madrid") == 1
+    assert script.var("travel.london") == 1
