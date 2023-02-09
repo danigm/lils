@@ -1,8 +1,14 @@
 import sys
-import gi
+
+try:
+    import gi
+except ModuleNotFoundError:
+    print("Can't import gi, please, install the dbus extra", file=sys.stderr)
+    print("pip install pylils[dbus]", file=sys.stderr)
+    sys.exit(1)
 
 
-gi.require_version('GLib', '2.0') # noqa
+gi.require_version("GLib", "2.0") # noqa
 from gi.repository import Gio # noqa
 from gi.repository import GLib # noqa
 

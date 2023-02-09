@@ -108,7 +108,7 @@ name = "pycairo"
 version = "1.23.0"
 description = "Python interface for cairo"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.7"
 files = [
     {file = "pycairo-1.23.0-cp310-cp310-win32.whl", hash = "sha256:564601e5f528531c6caec1c0177c3d0709081e1a2a5cccc13561f715080ae535"},
@@ -129,7 +129,7 @@ name = "pygobject"
 version = "3.42.2"
 description = "Python bindings for GObject Introspection"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.6, <4"
 files = [
     {file = "PyGObject-3.42.2.tar.gz", hash = "sha256:21524cef33100c8fd59dc135948b703d79d303e368ce71fa60521cc971cd8aa7"},
@@ -174,7 +174,10 @@ files = [
     {file = "tomli-2.0.1.tar.gz", hash = "sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f"},
 ]
 
+[extras]
+dbus = ["pygobject"]
+
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "7d4ffce2db34b83aedd3c965997f810a65c29b19876e22d1b160f7dc59126fd4"
+content-hash = "98533ac3f8270ea2c1da74d2dfe75a89fb1450e5ba2d85f202ac4e9f3451eb40"

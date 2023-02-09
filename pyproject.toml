@@ -1,21 +1,28 @@
 [tool.poetry]
-name = "lils"
+name = "pylils"
 version = "1.0.0"
 description = "Linux Immersive Learning System"
 authors = ["Daniel Garcia Moreno <daniel.garcia@suse.com>"]
 readme = "README.md"
 
+packages = [
+    { include = "lils" }
+]
+
 [tool.poetry.dependencies]
 python = "^3.10"
 lark = "^1.1.5"
-pygobject = "^3.42.2"
+pygobject = { version = "^3.42.2", optional = true }
 
 [tool.poetry.group.test.dependencies]
 pytest = "^7.2.1"
 
 [tool.poetry.scripts]
 lils = "lils.__main__:main"
-lils-dbus = "lils.dbus:main"
+lils-dbus = { callable = "lils.dbus:main", extras = ["dbus"] }
+
+[tool.poetry.extras]
+dbus = ["pygobject"]
 
 [build-system]
 requires = ["poetry-core"]
