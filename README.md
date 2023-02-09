@@ -1,3 +1,48 @@
+## Installation
+
+```
+pip install pylils
+```
+
+or if you want to use the dbus service (this depends on pygobject):
+```
+pip install pylils[dbus]
+```
+
+## Usage
+
+```python
+from lils.ink import InkScript
+
+script = InkScript("myscript.ink")
+# Starts the script
+script.run()
+
+# Get the current state output as an array of lils.ink.Text
+for i in script.output:
+    print(i)
+
+# Get the current state options as an array of lils.ink.Option
+for i in script.options:
+    print(i.option)
+
+# Choose an option
+script.choose(0)
+
+# Get or set some variable value
+x = script.var("x")
+script.set("x", x + 1)
+assert "x" in script.vars
+
+# Detecting state changes
+def _on_change(output):
+    print("state changed")
+    for i in output:
+        print(i)
+
+script = InkScript(filename, on_change=_on_change)
+```
+
 ## Project Description
 
 Immersive system to run interactive tutorials, hacking learning lessons or just
