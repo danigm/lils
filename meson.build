@@ -1,5 +1,5 @@
 # keep version in sync with pyproject.toml
-project('lils-dbus', version: '0.1.0')
+project('lils-dbus', version: '1.0.0')
 id = 'net.danigm.lils'
 
 dbus_dep = dependency ('dbus-1')
